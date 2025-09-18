@@ -39,6 +39,7 @@ class MemoryUpdate(BaseModel):
     content: Optional[str] = None
     metadata_: Optional[dict] = None
     state: Optional[str] = None
+    app_id: Optional[UUID] = None
 
 
 class MemoryResponse(BaseModel):

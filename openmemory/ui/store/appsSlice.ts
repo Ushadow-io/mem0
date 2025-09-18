@@ -197,6 +197,9 @@ const appsSlice = createSlice({
     setSortDirection: (state, action: PayloadAction<'asc' | 'desc'>) => {
       state.filters.sortDirection = action.payload;
     },
+    removeApp: (state, action: PayloadAction<string>) => {
+      state.apps = state.apps.filter(app => app.id !== action.payload);
+    },
   },
 });
 
@@ -219,6 +222,7 @@ export const {
   setActiveFilter,
   setSortBy,
   setSortDirection,
+  removeApp,
 } = appsSlice.actions;
 
 export default appsSlice.reducer;

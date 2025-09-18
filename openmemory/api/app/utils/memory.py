@@ -35,7 +35,7 @@ import socket
 from app.database import SessionLocal
 from app.models import Config as ConfigModel
 
-from mem0 import Memory
+from mem0 import Memory, AsyncMemory
 
 _memory_client = None
 _config_hash = None

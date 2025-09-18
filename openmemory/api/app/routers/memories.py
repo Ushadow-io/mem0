@@ -61,7 +61,6 @@ def update_memory_state(db: Session, memory_id: UUID, new_state: MemoryState, us
     db.commit()
     return memory
 
-
 def get_accessible_memory_ids(db: Session, app_id: UUID) -> Set[UUID]:
     """
     Get the set of memory IDs that the app has access to based on app-level ACL rules.
@@ -524,6 +523,7 @@ async def get_memory_access_log(
 class UpdateMemoryRequest(BaseModel):
     memory_content: str
     user_id: str
+    target_app_id: Optional[UUID] = None
 
 # Update a memory
 @router.put("/{memory_id}")
@@ -537,9 +537,53 @@ async def update_memory(
         raise HTTPException(status_code=404, detail="User not found")
     memory = get_memory_or_404(db, memory_id)
     memory.content = request.memory_content
+    if request.target_app_id:
+        memory.app_id = request.target_app_id
     db.commit()
     db.refresh(memory)
     return memory
+
+class MoveMemoriesRequest(BaseModel):
+    target_app_id: UUID  # Changed to str to handle UUID strings from frontend
+    user_id: str
+
+@router.post("/{app_id}/memories/move/")
+async def move_memories_to_app(
+    app_id: UUID,
+    request: UpdateMemoryRequest,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.user_id == request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")    
+    # Get memories to move
+    memories = db.query(Memory).filter(
+        Memory.id.in_(request.memory_ids),
+        Memory.app_id == app_id,
+        # Memory.user_id == user.id,
+        # Memory.state != MemoryState.deleted
+    ).all()
+    
+    if not memories:
+        raise HTTPException(status_code=404, detail="No memories found to move")
+    
+    # Move memories to target app
+    moved_count = 0
+    for memory in memories:
+        try:
+            await update_memory(memory.id, request, db)
+            moved_count += 1
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to move memory {memory.id}: {str(e)}")
+    
+    return {
+        "status": "success",
+        "message": f"Successfully moved {moved_count} memories to {request.target_app_id}",
+        "moved_count": moved_count
+    }
+
+
 
 class FilterMemoriesRequest(BaseModel):
     user_id: str
@@ -730,3 +774,5 @@ async def get_related_memories(
             for memory in items
         ]
     )
+
+    
