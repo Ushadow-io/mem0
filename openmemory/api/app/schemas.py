@@ -57,6 +57,7 @@ class MemoryResponse(BaseModel):
         if isinstance(v, datetime):
             return int(v.timestamp())
         return v
+    
 
 class PaginatedMemoryResponse(BaseModel):
     items: List[MemoryResponse]

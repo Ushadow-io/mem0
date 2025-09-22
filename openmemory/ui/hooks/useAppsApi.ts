@@ -99,7 +99,12 @@ export const useAppsApi = (): UseAppsApiReturn => {
       );
 
       setIsLoading(false);
-      dispatch(setAppsSuccess(response.data.apps));
+      dispatch(setAppsSuccess({
+        apps: response.data.apps,
+        total: response.data.total,
+        page: response.data.page,
+        pageSize: response.data.page_size
+      }));
       return {
         apps: response.data.apps,
         total: response.data.total
@@ -142,6 +147,7 @@ export const useAppsApi = (): UseAppsApiReturn => {
         items: response.data.memories,
         total: response.data.total,
         page: response.data.page,
+        pageSize: response.data.page_size,
       }));
       setIsLoading(false);
     } catch (err: any) {
@@ -163,6 +169,7 @@ export const useAppsApi = (): UseAppsApiReturn => {
         items: response.data.memories,
         total: response.data.total,
         page: response.data.page,
+        pageSize: response.data.page_size,
       }));
       setIsLoading(false);
     } catch (err: any) {
