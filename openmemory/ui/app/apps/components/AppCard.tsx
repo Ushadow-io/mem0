@@ -31,7 +31,7 @@ export function AppCard({ app }: AppCardProps) {
               <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden">
                 <Image
                   src={appConfig.iconImage}
-                  alt={appConfig.name}
+                  alt={app.name}
                   width={28}
                   height={28}
                 />

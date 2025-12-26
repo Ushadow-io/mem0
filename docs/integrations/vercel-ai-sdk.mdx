@@ -2,21 +2,19 @@
 title: Vercel AI SDK
 ---
 
-<Snippet file="paper-release.mdx" />
-
 The [**Mem0 AI SDK Provider**](https://www.npmjs.com/package/@mem0/vercel-ai-provider) is a library developed by **Mem0** to integrate with the Vercel AI SDK. This library brings enhanced AI interaction capabilities to your applications by introducing persistent memory functionality.
 
 <Note type="info">
-  🎉 Exciting news! Mem0 AI SDK now supports <strong>Graph Memory</strong>.
+  Mem0 AI SDK now supports <strong>Vercel AI SDK V5</strong>.
 </Note>
 
 ## Overview
 
-1. 🧠 Offers persistent memory storage for conversational AI
-2. 🔄 Enables smooth integration with the Vercel AI SDK
-3. 🚀 Ensures compatibility with multiple LLM providers
-4. 📝 Supports structured message formats for clarity
-5. ⚡ Facilitates streaming response capabilities
+1. Offers persistent memory storage for conversational AI
+2. Enables smooth integration with the Vercel AI SDK
+3. Ensures compatibility with multiple LLM providers
+4. Supports structured message formats for clarity
+5. Facilitates streaming response capabilities
 
 ## Setup and Configuration
 
@@ -42,13 +40,11 @@ npm install @mem0/vercel-ai-provider
       mem0ApiKey: "m0-xxx",
       apiKey: "provider-api-key",
       config: {
-        compatibility: "strict",
+        // Options for LLM Provider
       },
       // Optional Mem0 Global Config
       mem0Config: {
         user_id: "mem0-user-id",
-        org_id: "mem0-org-id",
-        project_id: "mem0-project-id",
       },
     });
     ```
@@ -60,10 +56,10 @@ npm install @mem0/vercel-ai-provider
 3. Add Memories to Enhance Context:
 
     ```typescript
-    import { LanguageModelV1Prompt } from "ai";
+    import { LanguageModelV2Prompt } from "@ai-sdk/provider";
     import { addMemories } from "@mem0/vercel-ai-provider";
 
-    const messages: LanguageModelV1Prompt = [
+    const messages: LanguageModelV2Prompt = [
       { role: "user", content: [{ type: "text", text: "I love red cars." }] },
     ];
 
@@ -73,9 +69,9 @@ npm install @mem0/vercel-ai-provider
 ### Standalone Features:
 
     ```typescript
-    await addMemories(messages, { user_id: "borat", mem0ApiKey: "m0-xxx", org_id: "org_xx", project_id: "proj_xx" });
-    await retrieveMemories(prompt, { user_id: "borat", mem0ApiKey: "m0-xxx", org_id: "org_xx", project_id: "proj_xx" });
-    await getMemories(prompt, { user_id: "borat", mem0ApiKey: "m0-xxx", org_id: "org_xx", project_id: "proj_xx" });
+    await addMemories(messages, { user_id: "borat", mem0ApiKey: "m0-xxx" });
+    await retrieveMemories(prompt, { user_id: "borat", mem0ApiKey: "m0-xxx" });
+    await getMemories(prompt, { user_id: "borat", mem0ApiKey: "m0-xxx" });
     ```
      > For standalone features, such as `addMemories`, `retrieveMemories`, and `getMemories`, you must either set `MEM0_API_KEY` as an environment variable or pass it directly in the function call.
 
@@ -144,7 +140,7 @@ npm install @mem0/vercel-ai-provider
 
     const mem0 = createMem0();
 
-    const { textStream } = await streamText({
+    const { textStream } = streamText({
         model: mem0("gpt-4-turbo", {
             user_id: "borat",
         }),
@@ -207,6 +203,72 @@ console.log(sources);
 
 The same can be done for `streamText` as well.
 
+### 6. File Support with Memory Context
+
+Mem0 AI SDK supports file processing with memory context. Here's an example of analyzing a PDF file:
+
+```typescript
+import { streamText } from "ai";
+import { createMem0 } from "@mem0/vercel-ai-provider";
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+const mem0 = createMem0({
+  provider: "google",
+  mem0ApiKey: "m0-xxx",
+  config: {
+    apiKey: "google-api-key"
+  },
+  mem0Config: {
+    user_id: "alice",
+  },
+});
+
+async function main() {
+  // Read the PDF file
+  const filePath = join(process.cwd(), 'my_pdf.pdf');
+  const fileBuffer = readFileSync(filePath);
+
+  // Convert the file's arrayBuffer to a Base64 data URL
+  const arrayBuffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
+  const uint8Array = new Uint8Array(arrayBuffer);
+
+  // Convert Uint8Array to an array of characters
+  const charArray = Array.from(uint8Array, byte => String.fromCharCode(byte));
+  const binaryString = charArray.join('');
+  const base64Data = Buffer.from(binaryString, 'binary').toString('base64');
+  const fileDataUrl = `data:application/pdf;base64,${base64Data}`;
+
+  const { textStream } = streamText({
+    model: mem0("gemini-2.5-flash"),
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'Analyze the following PDF and generate a summary.',
+          },
+          {
+            type: 'file',
+            data: fileDataUrl,
+            mediaType: 'application/pdf',
+          },
+        ],
+      },
+    ],
+  });
+
+  for await (const textPart of textStream) {
+    process.stdout.write(textPart);
+  }
+}
+
+main();
+```
+
+> **Note**: File support is available with providers that support multimodal capabilities like Google's Gemini models. The example shows how to process PDF files, but you can also work with images, text files, and other supported formats.
+
 ## Graph Memory
 
 Mem0 AI SDK now supports Graph Memory. You can enable it by setting `enable_graph` to `true` in the `mem0Config` object.
@@ -225,6 +287,16 @@ const memories = await getMemories(prompt, { user_id: "borat", mem0ApiKey: "m0-x
 
 The `getMemories` function will return an object with two keys: `results` and `relations`, if `enable_graph` is set to `true`. Otherwise, it will return an array of objects.
 
+## Supported LLM Providers
+
+| Provider | Configuration Value |
+|----------|-------------------|
+| OpenAI | openai |
+| Anthropic | anthropic |
+| Google | google |
+| Groq | groq |
+
+> **Note**: You can use `google` as provider for Gemini (Google) models. They are same and internally they use `@ai-sdk/google` package.
 
 ## Key Features
 
@@ -242,12 +314,14 @@ The `getMemories` function will return an object with two keys: `results` and `r
 
 ## Conclusion
 
-Mem0’s Vercel AI SDK enables the creation of intelligent, context-aware applications with persistent memory and seamless integration.
+Mem0's Vercel AI SDK enables the creation of intelligent, context-aware applications with persistent memory and seamless integration.
 
-## Help
+<CardGroup cols={2}>
+  <Card title="OpenAI Agents SDK" icon="cube" href="/integrations/openai-agents-sdk">
+    Build agents with OpenAI SDK and Mem0
+  </Card>
+  <Card title="Mastra Integration" icon="star" href="/integrations/mastra">
+    Create intelligent agents with Mastra framework
+  </Card>
+</CardGroup>
 
-- For more details on Vercel AI SDK, visit the [Vercel AI SDK documentation](https://sdk.vercel.ai/docs/introduction).
-- For Mem0 documentation, refer to the [Mem0 Platform](https://app.mem0.ai/).
-- If you need further assistance, please feel free to reach out to us through following methods:
-
-<Snippet file="get-help.mdx" />

@@ -21,7 +21,7 @@
 
 <p align="center">
   <a href="https://mem0.dev/DiG">
-    <img src="https://dcbadge.vercel.app/api/server/6PzXDgEjG5?style=flat" alt="Mem0 Discord">
+    <img src="https://img.shields.io/badge/Discord-%235865F2.svg?&logo=discord&logoColor=white" alt="Mem0 Discord">
   </a>
   <a href="https://pepy.tech/project/mem0ai">
     <img src="https://img.shields.io/pypi/dm/mem0ai" alt="Mem0 PyPI - Downloads">
@@ -46,6 +46,8 @@
 <p align="center">
   <strong>⚡ +26% Accuracy vs. OpenAI Memory • 🚀 91% Faster • 💰 90% Fewer Tokens</strong>
 </p>
+
+> **🎉 mem0ai v1.0.0 is now available!** This major release includes API modernization, improved vector store support, and enhanced GCP integration. [See migration guide →](MIGRATION_GUIDE_v1.0.md)
 
 ##  🔥 Research Highlights
 - **+26% Accuracy** over OpenAI Memory on the LOCOMO benchmark
@@ -95,7 +97,7 @@ npm install mem0ai
 
 ### Basic Usage
 
-Mem0 requires an LLM to function, with `gpt-4o-mini` from OpenAI as the default. However, it supports a variety of LLMs; for details, refer to our [Supported LLMs documentation](https://docs.mem0.ai/components/llms/overview).
+Mem0 requires an LLM to function, with `gpt-4.1-nano-2025-04-14 from OpenAI as the default. However, it supports a variety of LLMs; for details, refer to our [Supported LLMs documentation](https://docs.mem0.ai/components/llms/overview).
 
 First step is to instantiate the memory:
 
@@ -114,7 +116,7 @@ def chat_with_memories(message: str, user_id: str = "default_user") -> str:
     # Generate Assistant response
     system_prompt = f"You are a helpful AI. Answer the question based on query and memories.\nUser Memories:\n{memories_str}"
     messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": message}]
-    response = openai_client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+    response = openai_client.chat.completions.create(model="gpt-4.1-nano-2025-04-14", messages=messages)
     assistant_response = response.choices[0].message.content
 
     # Create new memories from the conversation
@@ -166,4 +168,4 @@ We now have a paper you can cite:
 
 ## ⚖️ License
 
-Apache 2.0 — see the [LICENSE](LICENSE) file for details.
+Apache 2.0 — see the [LICENSE](https://github.com/mem0ai/mem0/blob/main/LICENSE) file for details.

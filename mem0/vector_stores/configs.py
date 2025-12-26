@@ -15,10 +15,17 @@ class VectorStoreConfig(BaseModel):
         "chroma": "ChromaDbConfig",
         "pgvector": "PGVectorConfig",
         "pinecone": "PineconeConfig",
+        "mongodb": "MongoDBConfig",
         "milvus": "MilvusDBConfig",
+        "baidu": "BaiduDBConfig",
+        "cassandra": "CassandraConfig",
+        "neptune": "NeptuneAnalyticsConfig",
         "upstash_vector": "UpstashVectorConfig",
         "azure_ai_search": "AzureAISearchConfig",
+        "azure_mysql": "AzureMySQLConfig",
         "redis": "RedisDBConfig",
+        "valkey": "ValkeyConfig",
+        "databricks": "DatabricksConfig",
         "elasticsearch": "ElasticsearchConfig",
         "vertex_ai_vector_search": "GoogleMatchingEngineConfig",
         "opensearch": "OpenSearchConfig",
@@ -26,6 +33,7 @@ class VectorStoreConfig(BaseModel):
         "weaviate": "WeaviateConfig",
         "faiss": "FAISSConfig",
         "langchain": "LangchainConfig",
+        "s3_vectors": "S3VectorsConfig",
     }
 
     @model_validator(mode="after")

@@ -1,6 +1,7 @@
 *.db
 .env*
 !.env.example
+!.env.template
 !.env.dev
 !ui/lib
 .venv/
@@ -11,3 +12,4 @@ node_modules/
 api/.openmemory*
 **/.next
 .openmemory/
+ui/package-lock.json

@@ -1,71 +1,108 @@
 ---
-title: Overview
-icon: "info"
+title: "Overview"
+icon: "terminal"
 iconType: "solid"
+description: "REST APIs for memory management, search, and entity operations"
 ---
 
-<Snippet file="paper-release.mdx" />
+## Mem0 REST API
 
-Mem0 provides a powerful set of APIs that allow you to integrate advanced memory management capabilities into your applications. Our APIs are designed to be intuitive, efficient, and scalable, enabling you to create, retrieve, update, and delete memories across various entities such as users, agents, apps, and runs.
+Mem0 provides a comprehensive REST API for integrating advanced memory capabilities into your applications. Create, search, update, and manage memories across users, agents, and custom entities with simple HTTP requests.
 
-## Key Features
+<Info>
+**Quick start:** Get your API key from the [Mem0 Dashboard](https://app.mem0.ai/dashboard/api-keys) and make your first memory operation in minutes.
+</Info>
 
-- **Memory Management**: Add, retrieve, update, and delete memories with ease.
-- **Entity-based Operations**: Perform operations on memories associated with specific users, agents, apps, or runs.
-- **Advanced Search**: Utilize our search API to find relevant memories based on various criteria.
-- **History Tracking**: Access the history of memory interactions for comprehensive analysis.
-- **User Management**: Manage user entities and their associated memories.
+---
 
-## API Structure
+## Quick Start Guide
 
-Our API is organized into several main categories:
+Get started with Mem0 API in three simple steps:
 
-1. **Memory APIs**: Core operations for managing individual memories and collections.
-2. **Entities APIs**: Manage different entity types (users, agents, etc.) and their associated memories.
-3. **Search API**: Advanced search functionality to retrieve relevant memories.
-4. **History API**: Track and retrieve the history of memory interactions.
+1. **[Add Memories](/api-reference/memory/add-memories)** - Store information and context from user conversations
+2. **[Search Memories](/api-reference/memory/v2-search-memories)** - Retrieve relevant memories using semantic search
+3. **[Get Memories](/api-reference/memory/v2-get-memories)** - Fetch all memories for a specific entity
+
+---
+
+## Core Operations
+
+<CardGroup cols={2}>
+  <Card title="Add Memories" icon="plus" href="/api-reference/memory/add-memories">
+    Store new memories from conversations and interactions
+  </Card>
+
+  <Card title="Search Memories" icon="magnifying-glass" href="/api-reference/memory/v2-search-memories">
+    Find relevant memories using semantic search with filters
+  </Card>
+
+  <Card title="Update Memory" icon="pen" href="/api-reference/memory/update-memory">
+    Modify existing memory content and metadata
+  </Card>
+
+  <Card title="Delete Memory" icon="trash" href="/api-reference/memory/delete-memory">
+    Remove specific memories or batch delete operations
+  </Card>
+</CardGroup>
+
+---
+
+## API Categories
+
+Explore the full API organized by functionality:
+
+<CardGroup cols={2}>
+  <Card title="Memory APIs" icon="microchip" href="/api-reference/memory/add-memories">
+    Core and advanced operations: CRUD, search, batch updates, history, and exports
+  </Card>
+
+  <Card title="Events APIs" icon="clock" href="/api-reference/events/get-events">
+    Track and monitor the status of asynchronous memory operations
+  </Card>
+
+  <Card title="Entities APIs" icon="users" href="/api-reference/entities/get-users">
+    Manage users, agents, and their associated memory data
+  </Card>
+
+  <Card title="Organizations & Projects" icon="building" href="/api-reference/organizations-projects">
+    Multi-tenant support, access control, and team collaboration
+  </Card>
+
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhook/create-webhook">
+    Real-time notifications for memory events and updates
+  </Card>
+</CardGroup>
+
+<Note>
+**Building multi-tenant apps?** Learn about [Organizations & Projects](/api-reference/organizations-projects) for team isolation and access control.
+</Note>
+
+---
 
 ## Authentication
 
-All API requests require authentication using HTTP Basic Auth. Ensure you include your API key in the Authorization header of each request.
+All API requests require authentication using Token-based authentication. Include your API key in the Authorization header:
 
-## Organizations and projects (optional)
-
-Organizations and projects provide the following capabilities:
-
-- **Multi-org/project Support**: Specify organization and project when initializing the Mem0 client to attribute API usage appropriately
-- **Member Management**: Control access to data through organization and project membership
-- **Access Control**: Only members can access memories and data within their organization/project scope
-- **Team Isolation**: Maintain data separation between different teams and projects for secure collaboration
-
-Example with the mem0 Python package:
-
-<Tabs>
-  <Tab title="Python">
-
-```python
-from mem0 import MemoryClient
-client = MemoryClient(org_id='YOUR_ORG_ID', project_id='YOUR_PROJECT_ID')
+```bash
+Authorization: Token <your-api-key>
 ```
 
-  </Tab>
+Get your API key from the [Mem0 Dashboard](https://app.mem0.ai/dashboard/api-keys).
 
-  <Tab title="Node.js">
+<Warning>
+**Keep your API key secure.** Never expose it in client-side code or public repositories. Use environment variables and server-side requests only.
+</Warning>
 
-```javascript
-import { MemoryClient } from "mem0ai";
-const client = new MemoryClient({organizationId: "YOUR_ORG_ID", projectId: "YOUR_PROJECT_ID"});
-```
+---
 
-  </Tab>
-</Tabs>
+## Next Steps
 
-## Getting Started
+<CardGroup cols={2}>
+  <Card title="Add Your First Memory" icon="rocket" href="/api-reference/memory/add-memories">
+    Start storing memories via the REST API
+  </Card>
 
-To begin using the Mem0 API, you'll need to:
-
-1. Sign up for a [Mem0 account](https://app.mem0.ai) and obtain your API key.
-2. Familiarize yourself with the API endpoints and their functionalities.
-3. Make your first API call to add or retrieve a memory.
-
-Explore the detailed documentation for each API endpoint to learn more about request/response formats, parameters, and example usage.
+  <Card title="Search with Filters" icon="filter" href="/api-reference/memory/v2-search-memories">
+    Learn advanced search and filtering techniques
+  </Card>
+</CardGroup>
