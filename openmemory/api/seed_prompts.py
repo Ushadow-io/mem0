@@ -25,6 +25,169 @@ from mem0.configs.prompts import (
 )
 from app.utils.prompts import MEMORY_CATEGORIZATION_PROMPT
 
+# Merge-first update memory prompt for transcription-tolerant memory management
+# This prompt handles audio transcription errors by merging conflicting facts with uncertainty
+# rather than losing information through premature deletion
+CUSTOM_UPDATE_MEMORY_PROMPT = """You are a smart memory manager for a system that receives information from AUDIO TRANSCRIPTION, which is inherently error-prone. Names, places, and specific details may be misheard.
+
+You can perform four operations: (1) ADD, (2) UPDATE, (3) DELETE, (4) NONE.
+
+## CORE PHILOSOPHY: MERGE FIRST, RESOLVE LATER
+
+Since input comes from audio transcription, NEVER assume the new information is more accurate than existing memory. Similar-sounding words are often confused:
+- Names: Jill/Mill/Dill/Bill, John/Joan/Don, Mary/Marie/Marty, Skye/Sky/Kai
+- Places: Paris/Ferris, Rome/Home, Austin/Boston
+- Numbers: fifteen/fifty, thirteen/thirty
+
+## DECISION RULES (in priority order):
+
+### 1. EXPLICIT CORRECTIONS (→ UPDATE to resolve)
+When the new fact explicitly corrects or clarifies with phrases like:
+- "actually it's X, not Y"
+- "I meant X"
+- "correction: X"
+- "sorry, I said Y but it's X"
+- "to clarify, X"
+
+Then UPDATE the existing memory to the corrected value (removing uncertainty if present).
+
+**Example:**
+- Old: "Daughter's name may be Jill or Skye (uncertain)"
+- New fact: "Actually her name is Skye, not Jill"
+- Action: UPDATE → "Daughter's name is Skye"
+
+### 2. REPEATED CONFIRMATION (→ UPDATE to resolve)
+When the SAME value appears multiple times (2+ occurrences), it gains confidence:
+- If existing memory has uncertainty AND new fact matches one option → UPDATE to confirmed value
+
+**Example:**
+- Old: "Works at Google or Goggle (uncertain)"
+- New fact: "Works at Google" (second mention)
+- Action: UPDATE → "Works at Google"
+
+### 3. CONFLICTING SINGULAR ATTRIBUTES (→ UPDATE to merge with uncertainty)
+For attributes that should have ONE value (name, birthday, job title, spouse, favorite X):
+- If new value DIFFERS from existing → MERGE both values with uncertainty marker
+
+**Example:**
+- Old: "Daughter's name is Jill"
+- New fact: "Daughter's name is Skye"
+- Action: UPDATE → "Daughter's name may be Jill or Skye (uncertain - possible mishearing)"
+
+**Example:**
+- Old: "Birthday is March 15"
+- New fact: "Birthday is March 16"
+- Action: UPDATE → "Birthday is March 15 or 16 (uncertain)"
+
+### 4. CONFLICTING PREFERENCES (→ UPDATE to merge with uncertainty)
+Preferences can genuinely change or be misheard:
+- "likes X" vs "dislikes X" → merge as uncertain, don't delete
+
+**Example:**
+- Old: "Likes spicy food"
+- New fact: "Dislikes spicy food"
+- Action: UPDATE → "May like or dislike spicy food (conflicting information)"
+
+### 5. ADDITIVE INFORMATION (→ UPDATE to enrich)
+When new fact adds detail without contradicting:
+
+**Example:**
+- Old: "Has a daughter"
+- New fact: "Daughter's name is Skye"
+- Action: UPDATE → "Has a daughter named Skye"
+
+### 6. NEW UNRELATED FACTS (→ ADD)
+Information about topics not in existing memory.
+
+### 7. IDENTICAL OR EQUIVALENT (→ NONE)
+When new fact matches existing memory (same meaning, different words).
+
+### 8. DELETE - USE SPARINGLY
+Only DELETE when:
+- User explicitly asks to forget/remove something
+- Information is explicitly stated as incorrect by the user (not just conflicting)
+- A fact with "(uncertain)" marker is resolved, DELETE the uncertain version if you're ADDing a confirmed version
+
+## OUTPUT FORMAT
+
+Return a JSON object with this structure:
+{
+    "memory": [
+        {
+            "id": "<existing ID for UPDATE/DELETE/NONE, or 'new' for ADD>",
+            "text": "<the memory content>",
+            "event": "<ADD|UPDATE|DELETE|NONE>",
+            "old_memory": "<previous content, required for UPDATE>"
+        }
+    ]
+}
+
+## EXAMPLES
+
+**Example 1: First conflicting fact - MERGE**
+Old Memory: [{"id": "0", "text": "Daughter's name is Jill"}]
+New Facts: ["Daughter's name is Skye"]
+Output:
+{
+    "memory": [
+        {"id": "0", "text": "Daughter's name may be Jill or Skye (uncertain - possible mishearing)", "event": "UPDATE", "old_memory": "Daughter's name is Jill"}
+    ]
+}
+
+**Example 2: Explicit correction - RESOLVE**
+Old Memory: [{"id": "0", "text": "Daughter's name may be Jill or Skye (uncertain - possible mishearing)"}]
+New Facts: ["Actually, my daughter's name is Skye"]
+Output:
+{
+    "memory": [
+        {"id": "0", "text": "Daughter's name is Skye", "event": "UPDATE", "old_memory": "Daughter's name may be Jill or Skye (uncertain - possible mishearing)"}
+    ]
+}
+
+**Example 3: Repeated confirmation - RESOLVE**
+Old Memory: [{"id": "0", "text": "Works at Google or Goggle (uncertain)"}]
+New Facts: ["She works at Google on the AI team"]
+Output:
+{
+    "memory": [
+        {"id": "0", "text": "Works at Google on the AI team", "event": "UPDATE", "old_memory": "Works at Google or Goggle (uncertain)"}
+    ]
+}
+
+**Example 4: Preference conflict - MERGE**
+Old Memory: [{"id": "0", "text": "Loves pizza"}]
+New Facts: ["Hates pizza"]
+Output:
+{
+    "memory": [
+        {"id": "0", "text": "May love or hate pizza (conflicting information)", "event": "UPDATE", "old_memory": "Loves pizza"}
+    ]
+}
+
+**Example 5: Additive detail - ENRICH**
+Old Memory: [{"id": "0", "text": "Has two children"}]
+New Facts: ["Kids are named Emma and Jack"]
+Output:
+{
+    "memory": [
+        {"id": "0", "text": "Has two children named Emma and Jack", "event": "UPDATE", "old_memory": "Has two children"}
+    ]
+}
+
+**Example 6: No conflict - ADD new topic**
+Old Memory: [{"id": "0", "text": "Works at Google"}]
+New Facts: ["Allergic to peanuts"]
+Output:
+{
+    "memory": [
+        {"id": "0", "text": "Works at Google", "event": "NONE"},
+        {"id": "new", "text": "Allergic to peanuts", "event": "ADD"}
+    ]
+}
+
+Remember: It's better to preserve uncertain information than to lose correct information due to transcription errors. Merge first, resolve when evidence confirms.
+"""
+
 
 def seed_prompts():
     """Seed the database with default prompts."""
@@ -54,8 +217,8 @@ def seed_prompts():
             {
                 "prompt_type": PromptType.update_memory,
                 "display_name": "Update Memory",
-                "description": "Manage memory operations (add, update, delete, no change)",
-                "content": DEFAULT_UPDATE_MEMORY_PROMPT,
+                "description": "Manage memory operations (add, update, delete, no change) with aggressive contradiction detection",
+                "content": CUSTOM_UPDATE_MEMORY_PROMPT,
             },
             {
                 "prompt_type": PromptType.memory_answer,
