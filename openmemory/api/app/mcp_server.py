@@ -68,8 +68,8 @@ mcp_router = APIRouter(prefix="/mcp")
 # Initialize SSE transport
 sse = SseServerTransport("/mcp/messages/")
 
-@mcp.tool(description="Add a new memory. This method is called everytime the user informs anything about themselves, their preferences, or anything that has any relevant information which can be useful in the future conversation. This can also be called when the user asks you to remember something.")
-async def add_memories(text: str) -> str:
+@mcp.tool(description="Add a new memory. This method is called everytime the user informs anything about themselves, their preferences, or anything that has any relevant information which can be useful in the future conversation. This can also be called when the user asks you to remember something. Set infer to False to store the memory verbatim without LLM fact extraction.")
+async def add_memories(text: str, infer: bool = True) -> str:
     uid = user_id_var.get(None)
     client_name = client_name_var.get(None)
 
@@ -98,7 +98,8 @@ async def add_memories(text: str) -> str:
                                          metadata={
                                             "source_app": "openmemory",
                                             "mcp_client": client_name,
-                                        })
+                                         },
+                                         infer=infer)
 
             # Process the response and update database
             if isinstance(response, dict) and 'results' in response:
@@ -207,29 +208,9 @@ async def search_memory(query: str) -> str:
                 for memory in memories
             ]
 
-            # Log memory access for each memory found
-            if isinstance(memories, dict) and 'results' in memories:
-                print(f"Memories: {memories}")
-                for memory_data in memories['results']:
-                    if 'id' in memory_data:
-                        memory_id = uuid.UUID(memory_data['id'])
-                        # Create access log entry
-                        access_log = MemoryAccessLog(
-                            memory_id=memory_id,
-                            app_id=app.id,
-                            access_type="search",
-                            metadata_={
-                                "query": query,
-                                "score": memory_data.get('score'),
-                                "hash": memory_data.get('hash')
-                            }
-                        )
-                        db.add(access_log)
-                db.commit()
-            else:
-                for memory in memories:
-                    memory_id = uuid.UUID(memory['id'])
-                    # Create access log entry
+            for memory in memories:
+                if memory.get("id"):
+                    memory_id = uuid.UUID(str(memory['id']))
                     access_log = MemoryAccessLog(
                         memory_id=memory_id,
                         app_id=app.id,
@@ -241,7 +222,7 @@ async def search_memory(query: str) -> str:
                         }
                     )
                     db.add(access_log)
-                db.commit()
+            db.commit()
             return json.dumps(memories, indent=2)
         finally:
             db.close()
