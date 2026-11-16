@@ -154,7 +154,7 @@ async def search_memory(query: str) -> str:
                 })
 
             # ✨ NEW: Enrich results with graph data
-            enriched_results = await enrichment_service.enrich_memories(results)
+            enriched_results = await enrichment_service.enrich_memories(results, uid)
 
             for r in enriched_results:
                 if r.get("id"):

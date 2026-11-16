@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'api'))
 
 from app.services.graph_enrichment import GraphEnrichmentService
 
+TEST_USER_ID = os.environ.get('TEST_USER_ID', 'test-user')
+
 
 async def test_enrichment():
     """Test the graph enrichment service"""
@@ -51,7 +53,7 @@ async def test_enrichment():
     print()
 
     # Enrich the memory
-    enriched = await service.enrich_memory(test_memory)
+    enriched = await service.enrich_memory(test_memory, TEST_USER_ID)
 
     print("AFTER ENRICHMENT:")
     print("-" * 80)
@@ -83,7 +85,7 @@ async def test_enrichment():
     print()
 
     entity_name = "Josephine"
-    entity_context = await service.get_entity_context(entity_name)
+    entity_context = await service.get_entity_context(entity_name, TEST_USER_ID)
 
     if entity_context:
         print(f"✅ Found entity: {entity_name}")

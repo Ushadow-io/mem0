@@ -46,7 +46,7 @@ class GraphEnrichmentService:
         if self.driver:
             self.driver.close()
 
-    async def enrich_memory(self, memory: Dict) -> Dict:
+    async def enrich_memory(self, memory: Dict, user_id: str) -> Dict:
         """
         Enrich a single memory with graph data
 
@@ -57,6 +57,7 @@ class GraphEnrichmentService:
 
         Args:
             memory: Memory dict with 'id' and 'memory' fields
+            user_id: Requesting user; graph nodes are scoped to this user_id
 
         Returns:
             Enriched memory with 'entities' and 'relationships' fields
@@ -90,6 +91,7 @@ class GraphEnrichmentService:
                 UNWIND $names as search_name
                 MATCH (e)
                 WHERE toLower(e.name) = toLower(search_name)
+                  AND e.user_id = $user_id
                 WITH e.name as name,
                      collect(DISTINCT labels(e)) as all_labels,
                      collect(properties(e)) as all_properties,
@@ -103,7 +105,7 @@ class GraphEnrichmentService:
                 LIMIT 20
                 """
 
-                entities_result = session.run(entities_query, names=list(set(words)))
+                entities_result = session.run(entities_query, names=list(set(words)), user_id=user_id)
                 entities = []
                 entity_names = set()
                 seen_entities = set()  # Track which entities we've already added
@@ -160,8 +162,10 @@ class GraphEnrichmentService:
                     UNWIND $names as search_name
                     // Find relationships where entity is source OR target
                     MATCH (e1)-[r]->(e2)
-                    WHERE toLower(e1.name) = toLower(search_name)
-                       OR toLower(e2.name) = toLower(search_name)
+                    WHERE (toLower(e1.name) = toLower(search_name)
+                           OR toLower(e2.name) = toLower(search_name))
+                      AND e1.user_id = $user_id
+                      AND e2.user_id = $user_id
                     RETURN e1.name as source,
                            type(r) as relation,
                            e2.name as target,
@@ -171,7 +175,7 @@ class GraphEnrichmentService:
                     LIMIT 50
                     """
 
-                    relationships_result = session.run(relationships_query, names=list(entity_names))
+                    relationships_result = session.run(relationships_query, names=list(entity_names), user_id=user_id)
                     seen_rels = set()  # Deduplicate relationships
 
                     for record in relationships_result:
@@ -228,12 +232,13 @@ class GraphEnrichmentService:
             logger.exception(e)
             return memory
 
-    async def enrich_memories(self, memories: List[Dict]) -> List[Dict]:
+    async def enrich_memories(self, memories: List[Dict], user_id: str) -> List[Dict]:
         """
         Enrich multiple memories with graph data
 
         Args:
             memories: List of memory dicts
+            user_id: Requesting user; graph nodes are scoped to this user_id
 
         Returns:
             List of enriched memories
@@ -243,18 +248,18 @@ class GraphEnrichmentService:
 
         enriched_memories = []
         for memory in memories:
-            enriched = await self.enrich_memory(memory)
+            enriched = await self.enrich_memory(memory, user_id)
             enriched_memories.append(enriched)
 
         return enriched_memories
 
-    async def get_entity_context(self, entity_name: str, user_id: Optional[str] = None) -> Dict:
+    async def get_entity_context(self, entity_name: str, user_id: str) -> Dict:
         """
         Get full context for an entity (all relationships and properties)
 
         Args:
             entity_name: Name of the entity to look up
-            user_id: Optional user ID to filter by
+            user_id: Requesting user; only this user's graph nodes are matched
 
         Returns:
             Dict with entity details, related entities, and relationships
@@ -264,17 +269,13 @@ class GraphEnrichmentService:
 
         try:
             with self.driver.session() as session:
-                # Build query with case-insensitive name match and optional user filter
+                # Case-insensitive name match, scoped to the requesting user
                 query = """
                 MATCH (e)
                 WHERE toLower(e.name) = toLower($entity_name)
-                """
-
-                if user_id:
-                    query += "AND e.user_id = $user_id\n"
-
-                query += """
+                  AND e.user_id = $user_id
                 OPTIONAL MATCH (e)-[r]-(related)
+                WHERE related.user_id = $user_id
                 RETURN e,
                        labels(e) as entity_labels,
                        properties(e) as entity_props,
@@ -287,9 +288,7 @@ class GraphEnrichmentService:
                 LIMIT 1
                 """
 
-                params = {"entity_name": entity_name}
-                if user_id:
-                    params["user_id"] = user_id
+                params = {"entity_name": entity_name, "user_id": user_id}
 
                 result = session.run(query, params)
                 record = result.single()

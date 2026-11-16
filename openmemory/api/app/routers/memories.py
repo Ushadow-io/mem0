@@ -509,7 +509,7 @@ async def filter_memories_enriched(
 
     # Enrich with graph data
     enrichment_service = get_enrichment_service()
-    enriched_items = await enrichment_service.enrich_memories(page_result.items)
+    enriched_items = await enrichment_service.enrich_memories(page_result.items, request.user_id)
 
     # Return enriched page
     return {
